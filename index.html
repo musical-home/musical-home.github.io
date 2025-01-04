@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meta Referral Codes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+	  background-color: #242424;
+	  color: white;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #383838;
+      padding: 20px 20px;
+      border-bottom: 1px solid #ccc;
+    }
+    .header .logo {
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+    .header .nav {
+      display: flex;
+      gap: 15px;
+    }
+    .header .nav a {
+      text-decoration: none;
+      color: #f1f1f1;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 3px;
+      transition: background-color 0.3s;
+    }
+    .header .nav a:hover {
+      background-color: #1a1919;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .tab {
+      margin: 0 10px;
+      cursor: pointer;
+      padding: 10px 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #383838;
+    }
+    .tab.active {
+      background-color: #ccc;
+      font-weight: bold;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .search-bar {
+      gap: 10px;
+      margin: 20px 0;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .data {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .data-header {
+      font-weight: bold;
+      background-color: #e0e0e0;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+    }
+    .data div {
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #383838;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+	a {
+	color: white;
+	}
+    .no-data {
+      font-size: 1.5em;
+      color: #555;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">Meta Referral Codes</div>
+    <div class="nav">
+      <a href="#">Home</a>
+      <a href="./addlink">Add Your Own Link</a>
+    </div>
+  </div>
+  <br><br><br>
+  <div class="tabs">
+    <div class="tab" id="apps-tab">Apps</div>
+    <div class="tab" id="consoles-tab">Consoles</div>
+  </div>
+  <div class="container">
+    <input type="text" id="search-bar" class="search-bar" placeholder="Search For a Specific Game" style="display:none;" />
+    <div class="data">
+      <div class="data-header">Date Added</div>
+      <div class="data-header">Profile</div>
+      <div class="data-header">Link</div>
+      <div class="data-header" id="column-d-header">Game Name</div>
+    </div>
+    <div class="data" id="data-display"></div>
+    <div class="no-data" id="no-data-message" style="display:none;">Nobody Here But Us Chickens.</div>
+  </div>
+
+  <script>
+    const sheetId = "1HLylVs43aqOV2y8J7Cs1K9rF-UcUlWa9nZIjFjNcPgI"; // Replace with your Google Sheet ID
+    const apiKey = "AIzaSyCMS-13bzOa-uembMQYCLdz6kodCmBTcKA"; // Replace with your Google API Key
+    const range = "Sheet1!A1:F3105"; // Adjust range based on your sheet
+
+    let data = [];
+    let filteredData = [];
+    let currentTab = "Apps";
+
+    async function fetchData() {
+      try {
+        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`);
+        const result = await response.json();
+        data = (result.values || []).filter(row => row[4]); // Only include rows where column E is not empty
+        updateTab();
+      } catch (error) {
+        document.getElementById("data-display").textContent = "Error loading data.";
+        console.error(error);
+      }
+    }
+
+    function updateTab() {
+      filteredData = data.filter(row => row[4] === currentTab.slice(0, -1)); // Filter by "App" or "Console"
+      const columnDHeader = document.getElementById("column-d-header");
+      columnDHeader.textContent = currentTab === "Apps" ? "Game Name" : "Console Region";
+      updateDisplay();
+      document.getElementById("search-bar").style.display = currentTab === "Apps" ? "block" : "none";
+    }
+
+    function updateDisplay() {
+      const dataDisplay = document.getElementById("data-display");
+      const noDataMessage = document.getElementById("no-data-message");
+      dataDisplay.innerHTML = "";
+
+      if (filteredData.length > 0) {
+        noDataMessage.style.display = "none";
+        filteredData.forEach(row => {
+          const rowData = row.slice(0, 4); // Exclude columns E and F
+          rowData.forEach((cellData, index) => {
+            const cell = document.createElement("div");
+            if ((index === 1 || index === 2) && cellData) { // Make links clickable for columns B and C
+              const link = document.createElement("a");
+              link.href = cellData;
+              link.target = "_blank";
+              link.textContent = cellData;
+              cell.appendChild(link);
+            } else {
+              cell.textContent = cellData || ""; // Display empty if no value
+            }
+            dataDisplay.appendChild(cell);
+          });
+        });
+      } else {
+        noDataMessage.style.display = "block";
+      }
+    }
+
+    document.getElementById("apps-tab").addEventListener("click", () => {
+      currentTab = "Apps";
+      document.getElementById("apps-tab").classList.add("active");
+      document.getElementById("consoles-tab").classList.remove("active");
+      updateTab();
+    });
+
+    document.getElementById("consoles-tab").addEventListener("click", () => {
+      currentTab = "Consoles";
+      document.getElementById("consoles-tab").classList.add("active");
+      document.getElementById("apps-tab").classList.remove("active");
+      updateTab();
+    });
+
+    document.getElementById("search-bar").addEventListener("input", (event) => {
+      const searchTerm = event.target.value.toLowerCase();
+      filteredData = data.filter(row => row[4] === "App" && row[3] && row[3].toLowerCase().includes(searchTerm));
+      updateDisplay();
+    });
+
+    fetchData();
+  </script>
+</body>
+</html>
